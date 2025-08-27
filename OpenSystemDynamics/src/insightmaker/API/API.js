@@ -3283,7 +3283,12 @@ See also:
 
 function getDisableEdit(primitive) {
 	return map(primitive, function(primitive) {
-		return isTrue(primitive.getAttribute("DisableEdit"));
+		let target = primitive.getAttribute("Source")
+		if(target == null){
+			return isTrue(primitive.getAttribute("DisableEdit"));
+		}else{
+			return isTrue(findID(target).getAttribute("DisableEdit"));
+		}
 	});
 }
 
@@ -3308,7 +3313,12 @@ See also:
 
 function getDisableDelete(primitive) {
 	return map(primitive, function(primitive) {
-		return isTrue(primitive.getAttribute("DisableDelete"));
+		let target = primitive.getAttribute("Source")
+		if(target == null){
+			return isTrue(primitive.getAttribute("DisableDelete"));
+		}else{
+			return isTrue(findID(target).getAttribute("DisableDelete"));
+		}
 	});
 }
 

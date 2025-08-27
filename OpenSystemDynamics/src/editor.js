@@ -18,6 +18,7 @@ var aboutDialog;
 var fullpotentialcssDialog;
 var thirdPartyLicensesDialog;
 var licenseDialog;
+var codeDialog;
 
 
 // This values are not used by StochSD, as primitives cannot be resized in StochSD
@@ -81,12 +82,44 @@ var defaultFill = "transparent";
 var defaultStroke = "black";
 var defaultTimeUnits = "days";
 
+//color values
+var editableColor = "rgb(102, 227, 109)"
+var disabledColor = "rgb(227, 109, 102)"
+
 //external functions
 var ExternalTriggerRunSimulationUnfinishedEvent;
 var ExternalTriggerRunSimulationFinishedEvent;
+var ExternalAddGeneralOnGraphElementOpenEvent;
+var ExternalAddGeneralOnButtonClickEvent;
 
 function hideTopPanel(){
 	document.getElementById('topPanel').style.display = "none";
+
+	document.getElementById('btn_mouse').style.display = "none";
+	document.getElementById('btn_delete').style.display = "none";
+	document.getElementById('btn_undo').style.display = "none";
+	document.getElementById('btn_redo').style.display = "none";
+
+	document.getElementById('btn_stock').style.display = "none";
+	document.getElementById('btn_variable').style.display = "none";
+	document.getElementById('btn_constant').style.display = "none";
+	document.getElementById('btn_converter').style.display = "none";
+	document.getElementById('btn_flow').style.display = "none";
+	document.getElementById('btn_link').style.display = "none";
+	document.getElementById('btn_ghost').style.display = "none";
+	document.getElementById('btn_rotatename').style.display = "none";
+	document.getElementById('btn_movevalve').style.display = "none";
+	document.getElementById('btn_straighten_link').style.display = "none";
+	document.getElementById('btn_text').style.display = "none";
+	document.getElementById('btn_rectangle').style.display = "none";
+	document.getElementById('btn_ellipse').style.display = "none";
+	document.getElementById('btn_line').style.display = "none";
+	document.getElementById('btn_numberbox').style.display = "none";
+	document.getElementById('btn_table').style.display = "none";
+	document.getElementById('btn_timeplot').style.display = "none";
+	document.getElementById('btn_compareplot').style.display = "none";
+	document.getElementById('btn_xyplot').style.display = "none";
+	document.getElementById('btn_histoplot').style.display = "none";
 }
 
 function hideInfoBar(){
@@ -796,6 +829,7 @@ class BaseObject {
 		this.name_radius = 30;
 		this.superClass = "baseobject";
 		this.color = defaultStroke;
+		this.boarderColor = defaultStroke;
 		// Warning: this.primitve can be null, since all DIM objects does not have a IM object such as anchors and flow_auxiliarys
 		// We should therefor check if this.primitive is null, in case we dont know which class we are dealing with
 		this.primitive = findID(this.id);
@@ -1059,6 +1093,17 @@ class OnePointer extends BaseObject {
 			const hasDefError = DefinitionError.has(prim);
 			this.icons.set("questionmark", hasDefError ? "visible" : "hidden");
 			this.icons.set("dice", ( ! hasDefError && hasRandomFunction(getValue(prim))) ? "visible" : "hidden");
+			//Added by Mark Nicoll 2025-03-29
+			//set color of items on update
+			let deleteValue = getDisableDelete(prim);
+			let editValue = getDisableEdit(prim);
+			if(deleteValue && !editValue){
+				this.setColor(editableColor);
+			}else if(deleteValue && editValue){
+				this.setColor(disabledColor);
+			}else{
+				this.setColor("rgb(0,0,0)")
+			}
 		}
 
 		if ( ! this.is_ghost) {
@@ -1087,6 +1132,9 @@ class BasePrimitive extends OnePointer {
 	}
 	doubleClick() {
 		openPrimitiveDialog(get_parent_id(this.id));
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -1324,11 +1372,12 @@ class StockVisual extends BasePrimitive {
 		// let textElem = svg_text(0, 39, "stock", "name_element");
 		let textElem = svg_text(0, 39, this.primitive.getAttribute("name"), "name_element");
 		textElem.setAttribute("fill", this.color);
+		textElem.style.textShadow = " -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
 		let size = this.getSize();
 		let w = size[0];
 		let h = size[1];
 		return [
-			svg_rect(-w/2,-h/2, w, h,  this.color,  defaultFill, "element"),
+			svg_rect(-w/2,-h/2, w, h,  this.color,  "white", "element"),
 			svg_rect(-w/2+2, -h/2+2, w-4, h-4, "none", this.color, "highlight"),
 			textElem,
 			svg_icons(defaultStroke, defaultFill, "icons")
@@ -1414,7 +1463,7 @@ class NumberboxVisual extends BasePrimitive {
 		this.setSelectionSizeToText();
 	}
 	getImage() {
-		this.element = svg_rect(-20,-15,40,30, this.color, defaultFill, "element");
+		this.element = svg_rect(-20,-15,40,30, this.color, "white", "element");
 		return [
 			this.element,
 			svg_rect(-20,-15,40,30, "none", this.color, "highlight"),
@@ -1443,6 +1492,9 @@ class NumberboxVisual extends BasePrimitive {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -1469,9 +1521,11 @@ class VariableVisual extends BasePrimitive {
 	}
 
 	getImage () {
+		let textElement = svg_text(0,0, this.primitive.getAttribute("name"), "name_element", {"fill": this.color})
+		textElement.style.textShadow = " -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
 		return [
-			svg_circle(0,0,this.getRadius(), this.color, defaultFill, "element"),
-			svg_text(0,0, this.primitive.getAttribute("name"), "name_element", {"fill": this.color}),
+			svg_circle(0,0,this.getRadius(), this.color, "white", "element"),
+			textElement,
 			svg_circle(0,0,this.getRadius()-2, "none", this.color, "highlight"),
 			svg_icons(defaultStroke, defaultFill, "icons")
 		];
@@ -1500,9 +1554,12 @@ class ConstantVisual extends VariableVisual {
 	getImage() {
 		let r = this.getRadius();
 		let rs = r - 3; // Selector radius 
+
+		let textElement = svg_text(0, 0, this.primitive.getAttribute("name"), "name_element", {"fill": this.color})
+		textElement.style.textShadow = " -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
 		return [
-			svg_path(`M0,${r} ${r},0 0,-${r} -${r},0Z`, this.color, defaultFill, "element"),
-			svg_text(0, 0, this.primitive.getAttribute("name"), "name_element", {"fill": this.color}),
+			svg_path(`M0,${r} ${r},0 0,-${r} -${r},0Z`, this.color, "white", "element"),
+			textElement,
 			svg_path(`M0,${rs} ${rs},0 0,-${rs} -${rs},0Z`, "none", this.color, "highlight"),
 			svg_icons(defaultStroke, defaultFill, "icons")
 		];
@@ -1586,6 +1643,9 @@ class ConverterVisual extends BasePrimitive {
 	}
 	doubleClick() {
 		openPrimitiveDialog(this.id, "value")
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -2111,14 +2171,15 @@ class FlowVisual extends BaseConnection {
 	}
 
 	makeGraphics() {
-		this.startCloud = svg_cloud(this.color, defaultFill, {"class": "element"});
-		this.endCloud = svg_cloud(this.color, defaultFill, {"class": "element"});
+		this.startCloud = svg_cloud(this.color, "white", {"class": "element"});
+		this.endCloud = svg_cloud(this.color, "white", {"class": "element"});
 		this.outerPath = svg_wide_path(5, this.color, {"class": "element"});
 		this.innerPath = svg_wide_path(3, "white"); // Must have white ohterwise path is black
-		this.arrowHeadPath = svg_arrow_head(this.color, defaultFill, {"class": "element"});
+		this.arrowHeadPath = svg_arrow_head(this.color, "white", {"class": "element"});
 		this.flowPathGroup = svg_group([this.startCloud, this.endCloud, this.outerPath, this.innerPath, this.arrowHeadPath]);
 		this.valve = svg_path("M8,8 -8,-8 8,-8 -8,8 Z", this.color, defaultFill, "element");
 		this.name_element = svg_text(0, -this.getRadius(), "vairable", "name_element");
+		this.name_element.style.textShadow = " -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000"
 		this.icons = svg_icons(defaultStroke, defaultFill, "icons");
 		this.variable = svg_group(
 			[svg_circle(0, 0, this.getRadius(), this.color, "white", "element"), 
@@ -2249,6 +2310,9 @@ class FlowVisual extends BaseConnection {
 	
 	doubleClick() {
 		openPrimitiveDialog(this.id);
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -2264,7 +2328,7 @@ class RectangleVisual extends TwoPointer {
 		this.element = svg_rect(this.getMinX(), this.getMinY(), this.getWidth(), this.getHeight(), defaultStroke, "none", "element");
 
 		// Invisible rect to more easily click
-		this.clickRect = svg_rect(this.getMinX(), this.getMinY(), this.getWidth(), this.getHeight(), "transparent", "none");
+		this.clickRect = svg_rect(this.getMinX(), this.getMinY(), this.getWidth(), this.getHeight(), "white", "none");
 		this.clickRect.setAttribute("stroke-width", "10");
 
 		this.coordRect = new CoordRect();
@@ -2286,6 +2350,9 @@ class RectangleVisual extends TwoPointer {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 	updateGraphics() {
 		this.element.setAttribute("stroke-dasharray", this.primitive.getAttribute("StrokeDashArray"));
@@ -2337,7 +2404,10 @@ class EllipseVisual extends TwoPointer {
 		});
 	}
 	doubleClick() {
-			this.dialog.show();
+		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 	updateGraphics() {
 		let cx = (this.startX + this.endX)/2;
@@ -2581,6 +2651,9 @@ class HtmlOverlayTwoPointer extends TwoPointer {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -2662,6 +2735,9 @@ class PlotVisual extends HtmlOverlayTwoPointer {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 }
 
@@ -3304,6 +3380,9 @@ class TextAreaVisual extends HtmlTwoPointer {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 	render() {
 		let newText = getName(this.primitive);
@@ -3830,6 +3909,9 @@ class LineVisual extends TwoPointer {
 	}
 	doubleClick() {
 		this.dialog.show();
+		if(ExternalAddGeneralOnGraphElementOpenEvent  !=  undefined){
+			ExternalAddGeneralOnGraphElementOpenEvent()
+		}
 	}
 	updateGraphics() {
 		this.line.setAttribute("stroke-width", this.primitive.getAttribute("StrokeWidth"));
@@ -4363,6 +4445,18 @@ class NumberboxTool extends OnePointCreateTool {
 		this.targetPrimitive = null;
 		this.numberboxable_primitives = ["stock", "variable", "constant", "converter", "flow"];
 	}
+	static createProcedurally(x,y,source){
+		let primitive_name = findFreeName(type_basename["text"]);
+		let primitive = createPrimitive(primitive_name, "Numberbox", [x,y],[0,0]);
+		primitive.setAttribute("Target",source.id);
+		
+		let position = getCenterPosition(primitive);
+		let visualObject = new NumberboxVisual(primitive.id, "numberbox",position);
+		visualObject.setColor(primitive.getAttribute("Color"));
+		visualObject.render();
+
+		return primitive;
+	}
 	static create(x, y) {
 		// The right place to  create primitives and elements is in the tools-layers
 		let primitive_name = findFreeName(type_basename["text"]);
@@ -4398,6 +4492,21 @@ class NumberboxTool extends OnePointCreateTool {
 }
 NumberboxTool.init();
 
+class GenerateCodeTool extends BaseTool{
+	static enterTool() {
+		let selected_ids = Object.keys(get_selected_root_objects());
+		if (selected_ids.length == 0) {
+			xAlert("You must select at least one primitive to generate code");
+			ToolBox.setTool("mouse");
+			return;
+		}
+		codeDialog.setInformation(selected_ids)
+		codeDialog.show();
+		InfoBar.update();
+		ToolBox.setTool("mouse");
+	}
+}
+GenerateCodeTool.init();
 
 class StockTool extends OnePointCreateTool {	
 	static create(x, y) {
@@ -4405,6 +4514,21 @@ class StockTool extends OnePointCreateTool {
 		let primitive_name = findFreeName(type_basename["stock"]);
 		let size = type_size["stock"];
 		let new_stock = createPrimitive(primitive_name, "Stock", [x-size[0]/2, y-size[1]/2], size);
+	}
+	static createProcedurally(name,x,y,deleteValue,editValue){
+		let size = type_size["stock"];
+		let new_converter = createPrimitive(
+			name, 
+			"Stock", 
+			[x, y], 
+			size,
+			{
+				"DisableDelete":deleteValue,
+				"DisableEdit":editValue,
+			}
+		);
+		update_relevant_objects([]);
+		return new_converter;
 	}
 }
 
@@ -4461,6 +4585,16 @@ class GhostTool extends OnePointCreateTool {
 		let DIM_ghost = get_object(ghost.getAttribute("id"));
 		source.subscribeAttribute(DIM_ghost.changeAttributeHandler);
 	}
+	static createProcedurally(x,y,source){
+		let ghost = makeGhost(source,[x,y]);
+		ghost.setAttribute("RotateName", "0");
+		syncVisual(ghost);
+		let DIM_ghost = get_object(ghost.getAttribute("id"));
+		source.subscribeAttribute(DIM_ghost.changeAttributeHandler);
+		update_relevant_objects([]);
+		InfoBar.update();
+		return ghost;
+	}
 	static enterTool() {
 		let selectedIds = get_selected_ids();
 		// filter out non root object, e.g. anchors 
@@ -4493,6 +4627,22 @@ class ConverterTool extends OnePointCreateTool {
 		let size = type_size["converter"];
 		let new_converter = createPrimitive(primitive_name, "Converter", [x-size[0]/2, y-size[1]/2], size);
 	}
+	static createProcedurally(name,x,y,deleteValue,editValue){
+		let size = type_size["converter"];
+		let new_converter = createPrimitive(
+			name, 
+			"Converter", 
+			[x, y], 
+			size,
+			{
+				"DisableDelete":deleteValue,
+				"DisableEdit":editValue,
+			}
+		);
+		update_relevant_objects([]);
+		InfoBar.update();
+		return new_converter;
+	}
 }
 
 class VariableTool extends OnePointCreateTool {
@@ -4508,6 +4658,24 @@ class VariableTool extends OnePointCreateTool {
 			{"isConstant": false}
 		);
 	}
+	static createProcedurally(name,x,y,deleteValue,editValue){
+		let size = type_size["variable"];
+		let newVariable = createPrimitive(
+			name, 
+			"Variable", 
+			[x,y], 
+			size,
+			{
+				"isConstant": false,
+				"DisableDelete":deleteValue,
+				"DisableEdit":editValue,
+			}
+		);
+		update_relevant_objects([]);
+		InfoBar.update();
+		return newVariable;
+	}
+
 }
 
 class ConstantTool extends OnePointCreateTool {
@@ -4521,6 +4689,23 @@ class ConstantTool extends OnePointCreateTool {
 			size, 
 			{"isConstant": true}
 		);
+	}
+	static createProcedurally(name,x,y,deleteValue,editValue){
+		let size = type_size["variable"];
+		let newVariable = createPrimitive(
+			name, 
+			"Variable", 
+			[x,y], 
+			size,
+			{
+				"isConstant": true,
+				"DisableDelete":deleteValue,
+				"DisableEdit":editValue,
+			}
+		);
+		update_relevant_objects([]);
+		InfoBar.update();
+		return newVariable;
 	}
 }
 
@@ -4601,10 +4786,14 @@ class MouseTool extends BaseTool {
 			// Detach anchor 
 			switch(object_array[selected_anchor.child_id].getAnchorType()) {
 				case anchorTypeEnum.start:
-					parent.setStartAttach(null);
+					if(parent.primitive.source != null && !getDisableDelete(parent.primitive.source)){
+						parent.setStartAttach(null);
+					}
 				break;
 				case anchorTypeEnum.end:
-					parent.setEndAttach(null);
+					if(parent.primitive.target != null && !getDisableDelete(parent.primitive.target)){
+						parent.setEndAttach(null);
+					}
 				break;
 			}
 		}
@@ -4785,6 +4974,42 @@ class FlowTool extends TwoPointerTool {
 		// Is to prevent error if rightdown happens before leftdown 
 		// can be either "x" or "y" 
 		this.direction = "";
+	}
+	static createProcedurally(name,x1,y1,source,x2,y2,target,deleteValue,editValue){
+		let primitive = createConnector(name, "Flow", null, null);
+		setDisableEdit(primitive,editValue)			
+		setDisableDelete(primitive,deleteValue)
+		setNonNegative(primitive, false);
+		
+		let current_connection = new FlowVisual(primitive.id, this.getType(), [x1,y1], [x2, y2]);
+		current_connection.name_pos = Number(primitive.getAttribute("RotateName"));
+		unselect_all_other_anchors(current_connection.id, current_connection.end_anchor.id);
+		update_name_pos(primitive.id);
+
+		attach_anchor(object_array[current_connection.end_anchor.id]);
+
+		if(deleteValue && !editValue){
+			current_connection.setColor(editableColor);
+		}else if(deleteValue && editValue){
+			current_connection.setColor(disabledColor);
+		}
+
+		if (source != null) {
+			current_connection.setStartAttach(get_object(source.getAttribute("id")));
+		}
+		if (target != null) {
+			current_connection.setEndAttach(get_object(target.getAttribute("id")));
+		}
+		current_connection.update();
+
+		let mainAnchor = get_object(current_connection.end_anchor.id);
+		let parent = get_parent(mainAnchor);
+
+		parent.requestNewAnchorPos([x2, y2],current_connection.end_anchor.id);
+		parent.update();
+
+		set_name(primitive.id,name);
+		return primitive;
 	}
 	static leftMouseDown(x, y) {
 
@@ -5073,6 +5298,47 @@ class LinkTool extends TwoPointerTool {
 		this.primitive = createConnector(name, "Link", null,null);
 		this.current_connection = new LinkVisual(this.primitive.id, this.getType(), [x,y], [x+1, y+1]);
 	}
+	static createProcedurally(x1,y1,source,x2,y2,target){
+		let connector = createConnector(name, "Link", null,null);
+		addMissingPrimitiveAttributes(connector);
+		let current_connection = new LinkVisual(connector.id, "link", [x1,y1], [x2, y2]);
+
+		let source_deleteValue = getDisableDelete(source);
+		let target_deleteValue = getDisableDelete(target);
+		let deleteValue = source_deleteValue && target_deleteValue			
+		let source_editValue = getDisableEdit(source);
+		let target_editValue = getDisableEdit(target);
+		let editValue = source_editValue && target_editValue
+		if(deleteValue && !editValue){
+			current_connection.setColor(editableColor);
+		}else if(deleteValue && editValue){
+			current_connection.setColor(disabledColor);
+		}
+
+		if (source != null) {
+			current_connection.setStartAttach(get_object(source.getAttribute("id")));
+		}
+		if (target != null) {
+			current_connection.setEndAttach(get_object(target.getAttribute("id")));
+		}
+
+		let bezierPoints = [
+			connector.getAttribute("b1x"),
+			connector.getAttribute("b1y"),
+			connector.getAttribute("b2x"),
+			connector.getAttribute("b2y")
+		];
+		if (bezierPoints.indexOf(null) == -1) {
+			current_connection.setHandle1Pos([Number(bezierPoints[0]),Number(bezierPoints[1])]);
+			current_connection.setHandle2Pos([Number(bezierPoints[2]),Number(bezierPoints[3])]);
+		} else {
+			current_connection.resetBezierPoints();
+		}
+		current_connection.update();
+		update_relevant_objects([]);
+		InfoBar.update();
+		return current_connection;
+	}
 	static mouseMoveSingleAnchor(x, y, shiftKey, node_id) {
 		let anchor_type = node_id.split(".")[1];
 		if (anchor_type === "start_anchor" || anchor_type === "end_anchor") {
@@ -5311,8 +5577,19 @@ function delete_selected_objects() {
 		// check if object not already deleted
 		// e.i. link gets deleted automatically if any of it's attachments gets deleted
 		if (get_object(key)) {
-			if(!getDisableDelete(findID(key))){
-				tool_deletePrimitive(key);
+			let prim = findID(key);
+			if(prim.value.nodeName == "Link"){
+				if(prim.source == null){
+					tool_deletePrimitive(key);
+				}else if(prim.target == null){
+					tool_deletePrimitive(key);
+				}else if(!getDisableDelete(prim.source) || !getDisableDelete(prim.target)){
+					tool_deletePrimitive(key);
+				}
+			}else{
+				if(!getDisableDelete(prim)){
+					tool_deletePrimitive(key);
+				}
 			}
 		}
 	}
@@ -5701,6 +5978,7 @@ class ToolBox {
 			"xyplot":XyPlotTool,
 			"histoplot":HistoPlotTool,
 			"numberbox":NumberboxTool,
+			"code":GenerateCodeTool,
 			"run":RunTool,
 			"step":StepTool,
 			"reset":ResetTool
@@ -5801,6 +6079,10 @@ function hashUpdate() {
 	if (location.hash == "#debug") {
 		showDebug();
 	}
+}
+
+function getToolBox(){
+	return ToolBox;
 }
 
 
@@ -6047,6 +6329,14 @@ $(window).load(function() {
 			});
 		}
 	}
+
+	
+	$('[id^="btn_"]').on( "mousedown", function() {
+		if(ExternalAddGeneralOnButtonClickEvent  !=  undefined){
+			ExternalAddGeneralOnButtonClickEvent()
+		}
+	} );
+
 	macroDialog = new MacroDialog();
 	definitionEditor = new DefinitionEditor();
 	converterDialog = new ConverterDialog();
@@ -6059,6 +6349,7 @@ $(window).load(function() {
 	fullpotentialcssDialog = new FullPotentialCSSDialog();
 	thirdPartyLicensesDialog = new ThirdPartyLicensesDialog();
 	licenseDialog = new LicenseDialog();
+	codeDialog = new CodeDialog();
 	
 	// When the program is fully loaded we create a new model
 	//~ fileManager.newModel();
@@ -6349,6 +6640,15 @@ function syncVisual(tprimitive) {
 			
 			visualObject.setColor(tprimitive.getAttribute("Color"));
 
+			//Added by Mark Nicoll 2025-03-10
+			let deleteValue = getDisableDelete(tprimitive);
+			let editValue = getDisableEdit(tprimitive);
+			if(deleteValue && !editValue){
+				visualObject.setColor(editableColor);
+			}else if(deleteValue && editValue){
+				visualObject.setColor(disabledColor);
+			}
+
 			visualObject.name_pos = Number(tprimitive.getAttribute("RotateName"));
 			update_name_pos(tprimitive.id);
 		}
@@ -6388,7 +6688,7 @@ function syncVisual(tprimitive) {
 						break;
 			}
 			set_name(tprimitive.id,tprimitive.getAttribute("name"));
-
+			tprimitive.getAttribute("")
 			visualObject.setColor(tprimitive.getAttribute("Color"));			
 
 			visualObject.name_pos = Number(tprimitive.getAttribute("RotateName"));
@@ -6409,6 +6709,15 @@ function syncVisual(tprimitive) {
 			
 			visualObject.setColor(tprimitive.getAttribute("Color"));
 
+			//Added by Mark Nicoll 2025-03-29
+			let deleteValue = getDisableDelete(tprimitive);
+			let editValue = getDisableEdit(tprimitive);
+			if(deleteValue && !editValue){
+				visualObject.setColor(editableColor);
+			}else if(deleteValue && editValue){
+				visualObject.setColor(disabledColor);
+			}
+
 			visualObject.name_pos = Number(tprimitive.getAttribute("RotateName"));
 			update_name_pos(tprimitive.id);
 		}
@@ -6426,6 +6735,16 @@ function syncVisual(tprimitive) {
 			connection.loadMiddlePoints();
 			
 			connection.setColor(tprimitive.getAttribute("Color"));
+
+			//Added by Mark Nicoll 2025-03-29
+			let deleteValue = getDisableDelete(tprimitive);
+			let editValue = getDisableEdit(tprimitive);
+			if(deleteValue && !editValue){
+				connection.setColor(editableColor);
+			}else if(deleteValue && editValue){
+				connection.setColor(disabledColor);
+			}
+
 			connection.valveIndex = parseInt(tprimitive.getAttribute("ValveIndex"));
 			connection.variableSide = (tprimitive.getAttribute("VariableSide") === "true");
 			
@@ -6449,6 +6768,20 @@ function syncVisual(tprimitive) {
 			let connection = new LinkVisual(tprimitive.id, "link", source_pos, target_pos);
 			
 			connection.setColor(tprimitive.getAttribute("Color"));
+
+			//Added by Mark Nicoll 2025-03-29
+			let source_deleteValue = getDisableDelete(tprimitive.source);
+			let target_deleteValue = getDisableDelete(tprimitive.target);
+			let deleteValue = source_deleteValue && target_deleteValue			
+			let source_editValue = getDisableEdit(tprimitive.source);
+			let target_editValue = getDisableEdit(tprimitive.target);
+			let editValue = source_editValue && target_editValue
+			if(deleteValue && !editValue){
+				connection.setColor(editableColor);
+			}else if(deleteValue && editValue){
+				connection.setColor(disabledColor);
+			}
+
 
 			if (tprimitive.source != null) {
 				// Attach to object
@@ -6649,6 +6982,10 @@ function setExternalTriggerRunSimulationUnfinishedEvent(event){
 
 function setExternalTriggerRunSimulationFinishedEvent(event){
 	ExternalTriggerRunSimulationFinishedEvent = event;
+}
+
+function setExternalAddGeneralOnButtonClickEvent(event){
+	ExternalAddGeneralOnButtonClickEvent = event;
 }
 
 class RunResults {
@@ -7116,6 +7453,9 @@ class jqDialog {
 				this.visible = false;
 				jqDialog.blockingDialogOpen = false;
 				this.afterClose();
+				if(ExternalAddGeneralOnButtonClickEvent  !=  undefined){
+					ExternalAddGeneralOnButtonClickEvent()
+				}
 			},
 			width: this.size[0],
 			height: this.size[1],
@@ -7133,9 +7473,15 @@ class jqDialog {
 		this.dialogParameters.buttons = {
 			"Cancel":() => {
 				$(this.dialog).dialog('close');
+				if(ExternalAddGeneralOnButtonClickEvent  !=  undefined){
+					ExternalAddGeneralOnButtonClickEvent()
+				}
 			},
 			"Apply": () => {
 				this.applyChanges();
+				if(ExternalAddGeneralOnButtonClickEvent  !=  undefined){
+					ExternalAddGeneralOnButtonClickEvent()
+				}
 			}
 		};
 		this.dialogParameters.width = "auto";
@@ -9059,7 +9405,7 @@ class ConverterDialog extends jqDialog {
 			<div style="display: grid; grid-template-columns: 25rem auto; grid-gap: 1rem;">
 				<div class="primitive-settings" style="padding: 1rem 0;">
 						<b>Name:</b><br/>
-						<input class="name-field" style="width: 100%;" type="text" value=""><br/><br/>
+						<input class="name-field" style="width: 100%;" type="text" value="" ><br/><br/>
 						<div style="display: flex; justify-content: space-between; width: 100%; align-items: baseline;">
 							<b>Definition:</b><span>${this.renderHelpButtonHtml("converter-help")}</span>
 						</div>
@@ -9433,6 +9779,122 @@ class LicenseDialog extends CloseDialog {
 	}
 }
 
+class CodeDialog extends CloseDialog{
+	constructor(){
+		super();
+		this.setTitle("Generated Code");
+	}
+	setInformation(selected_ids){
+		let selectedObjects = selected_ids.filter(id => ! id.includes(".")).map(get_object);
+		let generatedCode = "";
+		let item = "this.UpgradeList[i]"
+		for(let i = 0; i < selectedObjects.length; i++){
+			let obj = selectedObjects[i];
+			let name;
+			let value;
+			let start;
+			let end;
+			let disableDelete;
+			let disableEdit;
+			switch(obj.type) {
+  				case "stock":
+					name = obj.name_element.innerHTML;
+					if(obj.is_ghost){
+						generatedCode += item + ".scriptList.push(new AddGhostScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+"))"
+					}else{
+						value = getValue(obj.primitive);
+						disableDelete = getDisableDelete(obj.primitive);
+						disableEdit = getDisableEdit(obj.primitive);
+				 		generatedCode += item + ".scriptList.push(new AddStockScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+","+disableDelete+","+disableEdit+"))"
+						generatedCode += "<br>"
+						generatedCode += item + ".scriptList.push(new EditValueScript(\""+name+"\",\""+value+"\"))"
+					}
+					break;
+  				case  "constant":
+					name = obj.name_element.innerHTML;
+					if(obj.is_ghost){
+						generatedCode += item + ".scriptList.push(new AddGhostScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+"))"
+					}else{
+						value = getValue(obj.primitive);
+						disableDelete = getDisableDelete(obj.primitive);
+						disableEdit = getDisableEdit(obj.primitive);
+				 		generatedCode += item + ".scriptList.push(new AddConstantScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+","+disableDelete+","+disableEdit+"))"
+						generatedCode += "<br>"
+						generatedCode += item + ".scriptList.push(new EditValueScript(\""+name+"\",\""+value+"\"))"
+					}
+   					break;
+				case  "variable":
+					name = obj.name_element.innerHTML;
+   					if(obj.is_ghost){
+						generatedCode += item + ".scriptList.push(new AddGhostScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+"))"
+					}else{
+						value = getValue(obj.primitive);
+						disableDelete = getDisableDelete(obj.primitive);
+						disableEdit = getDisableEdit(obj.primitive);
+				 		generatedCode += item + ".scriptList.push(new AddVariableScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+","+disableDelete+","+disableEdit+"))"
+						generatedCode += "<br>"
+						generatedCode += item + ".scriptList.push(new EditValueScript(\""+name+"\",\""+value+"\"))"
+					}
+					break;
+				case  "converter":
+					name = obj.name_element.innerHTML
+					value = getValue(obj.primitive);
+					disableDelete = getDisableDelete(obj.primitive);
+					disableEdit = getDisableEdit(obj.primitive);
+					generatedCode += item + ".scriptList.push(new AddConverterScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+","+disableDelete+","+disableEdit+"))"
+					generatedCode += "<br>"
+					generatedCode += item + ".scriptList.push(new EditValueScript(\""+name+"\",\""+value+"\"))"
+   					break;
+				case  "flow":
+					name = obj.name_element.innerHTML
+					value = getValue(obj.primitive);
+					if(obj._start_attach != null){
+						start = "\""+obj._start_attach.name_element.innerHTML+"\""
+					}else{
+						start = "null"
+					}
+					if(obj._end_attach != null){
+						end = "\""+obj._end_attach.name_element.innerHTML+"\""
+					}else{
+						end = "null"
+					}
+					disableDelete = getDisableDelete(obj.primitive);
+					disableEdit = getDisableEdit(obj.primitive);
+					generatedCode += item + ".scriptList.push(new AddFlowScript(\""+name+"\","+
+						obj.start_anchor.pos[0]+","+obj.start_anchor.pos[1]+","+start+","+
+						obj.end_anchor.pos[0]+","+obj.end_anchor.pos[1]+","+end+","+
+						disableDelete+","+disableEdit+"))"
+					generatedCode += "<br>"
+					generatedCode += item + ".scriptList.push(new EditValueScript(\""+name+"\",\""+value+"\"))"
+   					break;
+				case  "link":
+					if(obj._start_attach != null){
+						start = "\""+obj._start_attach.name_element.innerHTML+"\""
+					}else{
+						start = "null"
+					}
+					if(obj._end_attach != null){
+						end = "\""+obj._end_attach.name_element.innerHTML+"\""
+					}else{
+						end = "null"
+					}
+					generatedCode += item + ".scriptList.push(new AddLinkScript("+
+						obj.start_anchor.pos[0]+","+obj.start_anchor.pos[1]+","+start+","+
+						obj.end_anchor.pos[0]+","+obj.end_anchor.pos[1]+","+end+"))"
+   					break;
+				case "numberbox":
+					name = getName(findID(obj.primitive.getAttribute("Target")));
+					generatedCode += item + ".scriptList.push(new AddNumberBoxScript(\""+name+"\","+obj.pos[0]+","+obj.pos[1]+"))";
+					break;
+ 				default:
+				 	generatedCode += ""
+			}
+			generatedCode += "<br>"			
+		}
+		this.setHtml(generatedCode);
+	}
+}
+
 class ThirdPartyLicensesDialog extends CloseDialog {
 	constructor() {
 		super();
@@ -9653,6 +10115,7 @@ class DefinitionEditor extends jqDialog {
   				<div class="table-row">
 					<div class="table-cell" style="width: 30rem; height: 20rem;">
 						<div class="primitive-settings" style="padding: 10px 20px 20px 0px">
+							<span class="location-field"><b>Location:</b><span class="x-Location"></span>,<span class="y-Location"></span></span><br/>
 							<b>Name:</b><br/>
 							<input class="name-field enter-apply cm-primitive" style="width: 100%;" type="text" value=""><br/>
 							<div class="name-warning-div"></div><br/>
@@ -9769,7 +10232,10 @@ class DefinitionEditor extends jqDialog {
 				}
 			}
 		});
-
+		
+		this.locationField = $(this.dialogContent).find(".location-field").get(0);
+		this.locationXField = $(this.dialogContent).find(".x-Location").get(0);
+		this.locationYField = $(this.dialogContent).find(".y-Location").get(0);
 		this.valueField = $(this.dialogContent).find(".value-field").get(0);
 		this.nameField = $(this.dialogContent).find(".name-field").get(0);
 		this.cluster = $(this.dialogContent).find(".accordion-cluster").get(0);
@@ -9791,6 +10257,10 @@ class DefinitionEditor extends jqDialog {
 
 		$(this.disableEditCheckbox).click(() => {
 			this.updateDisableEdit();
+		});
+
+		$(this.disableDeleteCheckbox).click(() => {
+			this.updateDisableDelete();
 		});
 
 		let helpData = getFunctionHelpData();
@@ -9873,6 +10343,16 @@ class DefinitionEditor extends jqDialog {
 			alert("Primitive with id "+id+" does not exist");
 			return;
 		}
+
+		let test = getType(this.primitive)
+		if(["Variable", "Stock"].indexOf(getType(this.primitive)) != -1){
+			$(this.locationField).show()
+			$(this.locationXField).html(this.primitive.value.children[0].children[0].attributes.x.value);
+			$(this.locationYField).html(this.primitive.value.children[0].children[0].attributes.y.value);
+		}else{
+			$(this.locationField).hide()
+		}
+
 		this.show();
 		this.defaultFocusSelector = defaultFocusSelector;
 
@@ -9909,11 +10389,13 @@ class DefinitionEditor extends jqDialog {
 		//Handle get Disable Delete
 		let disableDelete = getDisableDelete(this.primitive);
 		$(this.disableDeleteCheckbox).prop("checked",disableDelete);
+		this.updateDisableDelete();
 
 		//todo need to flush out how admin mode works
 		if(!adminMode){
 			$(this.disableEditDiv).hide()
 			$(this.disableDeleteDiv).hide()
+			$(this.locationField).hide()
 		}
 
 
@@ -10009,12 +10491,25 @@ class DefinitionEditor extends jqDialog {
 	updateDisableEdit(){
 		let checked = $(this.disableEditCheckbox).prop("checked");
 		if(checked){
+			this.cmValueField.options.readOnly = 'nocursor'
 			$(this.valueField).prop("disabled", true);
-
 			$(this.cluster).hide();
+			$(this.referenceDiv).hide()
+			$(this.restrictNonNegativeDiv).hide()
 		}else{
+			this.cmValueField.options.readOnly = false
 			$(this.valueField).prop("disabled", false);
 			$(this.cluster).show();
+			$(this.referenceDiv).show()
+			$(this.restrictNonNegativeDiv).show()
+		}
+	}
+	updateDisableDelete(){
+		let checked = $(this.disableDeleteCheckbox).prop("checked");
+		if(checked){
+			$(this.nameField).prop("disabled", true);
+		}else{
+			$(this.nameField).prop("disabled", null);
 		}
 	}
 	templateClick(event) {
@@ -10081,7 +10576,7 @@ class DefinitionEditor extends jqDialog {
 			//handle Disable Delete
 			let disableDelete = $(this.disableDeleteCheckbox).prop("checked");
 			setDisableDelete(this.primitive,disableDelete)
-			
+
 			let visualObject = object_array[this.primitive.id];
 			if (visualObject) {
 				visualObject.update();
